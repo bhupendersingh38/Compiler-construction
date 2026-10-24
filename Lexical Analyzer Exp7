@@ -1,0 +1,56 @@
+%%bash
+apt-get -qq update
+apt-get -qq install -y flex gcc
+
+cat > lexer.l <<'EOF'
+%{
+#include <stdio.h>
+%}
+
+%option noyywrap
+
+%%
+"int"|"float"|"char"|"double"|"if"|"else"|"while"|"for"|"return" {
+    printf("%s -> KEYWORD\n", yytext);
+}
+
+[0-9]+ {
+    printf("%s -> NUMBER\n", yytext);
+}
+
+[a-zA-Z_][a-zA-Z0-9_]* {
+    printf("%s -> IDENTIFIER\n", yytext);
+}
+
+"=="|"!="|"<="|">="|"&&"|"||"|"++"|"--" {
+    printf("%s -> OPERATOR\n", yytext);
+}
+
+[+\-*/%=<>] {
+    printf("%s -> OPERATOR\n", yytext);
+}
+
+[\{\}\(\)\[\];,] {
+    printf("%s -> SPECIAL SYMBOL\n", yytext);
+}
+
+[ \t\n\r]+ {
+    /* Ignore whitespace */
+}
+
+. {
+    printf("%s -> UNKNOWN\n", yytext);
+}
+%%
+
+int main(void) {
+    printf("Lexical Analyzer Output:\n");
+    yylex();
+    return 0;
+}
+EOF
+
+flex lexer.l
+gcc lex.yy.c -o lexer
+
+printf 'int a = 10;\nif (a > 5)\n    a = a + 1;\nwhile (i <= 10) { i++; }\nint x = 5 @ 3;\n' | ./lexer
